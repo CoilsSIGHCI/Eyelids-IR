@@ -12,6 +12,7 @@ __pycache__/
 *.so
 
 # model weights
+trained_models
 *.pth
 
 # opts file

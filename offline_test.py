@@ -30,7 +30,6 @@ import pdb
 from sklearn.metrics import confusion_matrix
 
 def plot_cm(cm, classes, normalize = True):
-    import seaborn as sns
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         print("Normalized confusion matrix")

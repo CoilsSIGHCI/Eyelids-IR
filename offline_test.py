@@ -60,7 +60,7 @@ def calculate_accuracy(outputs, targets, topk=(1,)):
     return ret
 
 
-opt = parse_opts_offline()
+opt = parse_opts()
 if opt.root_path != '':
     opt.video_path = os.path.join(opt.root_path, opt.video_path)
     opt.annotation_path = os.path.join(opt.root_path, opt.annotation_path)
@@ -149,7 +149,7 @@ y_pred = []
 end_time = time.time()
 for i, (inputs, targets) in enumerate(test_loader):
     if not opt.no_cuda:
-        targets = targets.cuda(async=True)
+        targets = targets.cuda(non_blocking=True)
     #inputs = Variable(torch.squeeze(inputs), volatile=True)
     with torch.no_grad():
         inputs = Variable(inputs)

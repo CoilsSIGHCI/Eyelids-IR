@@ -27,9 +27,9 @@ python main.py --root_path ~/ \
 	--n_val_samples 1 \
     --n_epochs 60 \
     --ft_portion complete \
-	# --no_train \
- 	# --no_val \
- 	# --test
+	 --no_train \
+ 	 --no_val \
+ 	 --test
  	# --resume_path Efficient-3DCNNs/results/egogesture_shufflenet_2.0x_Depth_16_checkpoint.pth \
  		# --pretrain_path Efficient-3DCNNs/results/jester_mobilenetv2_1.0x_RGB_16_best.pth \
  			# --pretrain_path Efficient-3DCNNs-Ahmet/results/jester_resnext_101_RGB_16_checkpoint.pth \

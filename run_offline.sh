@@ -1,0 +1,23 @@
+#!/bin/bash
+python3 offline_test.py \
+  --root_path "$PWD" \
+  --annotation_path annotation_EgoGesture/egogestureall_but_None.json \
+  --result_path results \
+  --pretrain_path trained_models/Pretrained\ models/egogesture_resnetl_10_RGB_8.pth \
+  --dataset egogestur \
+  --sample_duration 3 \
+  --learning_rate 0.0 \
+  --model resnetl \
+  --pretrain_modality Dept \
+  --model_depth 10 \
+  --batch_size 1 \
+  --n_classes 8 \
+  --n_finetune_classes 8 \
+  --modality Dept \
+  --n_threads 1 \
+  --checkpoint 1 \
+  --train_crop rando \
+  --n_val_samples 1 \
+  --test_subset test \
+  --n_epochs 10 \
+  --no_cuda

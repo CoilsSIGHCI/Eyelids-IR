@@ -1,6 +1,8 @@
 import os
 import glob
 import json
+import re
+
 import pandas as pd
 import numpy as np
 import csv
@@ -37,6 +39,7 @@ def weighting_func(x):
 
 opt = parse_opts_online()
 
+regex = re.compile(r'(^module\.)')
 
 def load_models(opt):
     opt.resume_path = opt.resume_path_det
@@ -73,13 +76,19 @@ def load_models(opt):
     torch.manual_seed(opt.manual_seed)
 
     detector, parameters = generate_model(opt)
-    detector = detector.cuda()
+    if not opt.no_cuda:
+        detector = detector.cuda()
     if opt.resume_path:
         opt.resume_path = os.path.join(opt.root_path, opt.resume_path)
         print('loading checkpoint {}'.format(opt.resume_path))
-        checkpoint = torch.load(opt.resume_path)
+        if opt.no_cuda:
+            checkpoint = torch.load(opt.resume_path, map_location=torch.device('cpu'))
+        else:
+            checkpoint = torch.load(opt.resume_path)
 
-        detector.load_state_dict(checkpoint['state_dict'])
+        # slice "module." from the model layer names
+        # detector.load_state_dict([checkpoint['state_dict']])
+        detector.load_state_dict({regex.sub('', k): v for k, v in checkpoint['state_dict'].items()})
 
     print('Model 1 \n', detector)
     pytorch_total_params = sum(p.numel() for p in detector.parameters() if
@@ -118,12 +127,18 @@ def load_models(opt):
 
     torch.manual_seed(opt.manual_seed)
     classifier, parameters = generate_model(opt)
-    classifier = classifier.cuda()
+    if not opt.no_cuda:
+        classifier = classifier.cuda()
     if opt.resume_path:
         print('loading checkpoint {}'.format(opt.resume_path))
-        checkpoint = torch.load(opt.resume_path)
+        if opt.no_cuda:
+            checkpoint = torch.load(opt.resume_path, map_location=torch.device('cpu'))
+        else:
+            checkpoint = torch.load(opt.resume_path)
 
-        classifier.load_state_dict(checkpoint['state_dict'])
+        # slice "module." from the model layer names
+        # classifier.load_state_dict(checkpoint['state_dict'])
+        classifier.load_state_dict({regex.sub('', k): v for k, v in checkpoint['state_dict'].items()})
 
     print('Model 2 \n', classifier)
     pytorch_total_params = sum(p.numel() for p in classifier.parameters() if

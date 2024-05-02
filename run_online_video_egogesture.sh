@@ -3,10 +3,10 @@
 # "$1" test video path
 
 python online_test_video.py \
-	--root_path ~/Real-time-GesRec \
-	--resume_path_det results/egogesture_resnetl_10_RGB_8.pth \
-	--resume_path_clf results/egogesture_resnext_101_RGB_32.pth  \
-    --video $1 \
+	--root_path "$PWD" \
+	--resume_path_det 'trained_models/Pretrained models/egogesture_resnetl_10_RGB_8.pth' \
+	--resume_path_clf 'trained_models/Pretrained models/egogesture_resnext_101_RGB_32.pth'  \
+  --video $1 \
 	--sample_duration 8 \
 	--sample_duration_det 8 \
 	--sample_duration_clf 32 \
@@ -17,7 +17,7 @@ python online_test_video.py \
 	--width_mult_clf 1 \
 	--model_depth_clf 101 \
 	--resnet_shortcut_det A \
-    --resnet_shortcut_clf B \
+  --resnet_shortcut_clf B \
 	--batch_size 1 \
 	--n_classes_det 2 \
 	--n_finetune_classes_det 2 \
@@ -34,4 +34,5 @@ python online_test_video.py \
 	--clf_queue_size 32 \
 	--clf_threshold_pre 1.0 \
 	--clf_threshold_final 0.15 \
-	--stride_len 1
+	--stride_len 1\
+  --no_cuda

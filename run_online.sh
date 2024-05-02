@@ -1,6 +1,6 @@
 #!/bin/bash
 python3 online_test.py \
-	--root_path /Users/A.Gunduz/Desktop/git/Real-time-GesRec/\
+	--root_path "$PWD"\
 	--video_path /data2/EgoGesture/images \
 	--annotation_path annotation_EgoGesture/egogestureall.json \
 	--resume_path_det report/egogesture_resnetl_10_Depth_8_9939.pth \
@@ -35,4 +35,4 @@ python3 online_test.py \
 	--clf_threshold_pre 0.6 \
 	--clf_threshold_final 0.15 \
 	--stride_len 1 \
-	--no_cuda \
+	--no_cuda

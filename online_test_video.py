@@ -165,7 +165,7 @@ spatial_transform = Compose([
 
 opt.sample_duration = max(opt.sample_duration_clf, opt.sample_duration_det)
 fps = ""
-cap = cv2.VideoCapture(opt.video)
+cap = cv2.VideoCapture(0)
 num_frame = 0
 clip = []
 active_index = 0

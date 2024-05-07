@@ -1,12 +1,9 @@
 #!/bin/bash
 
-# "$1" test video path
-
 python online_test_video.py \
 	--root_path "$PWD" \
 	--resume_path_det 'trained_models/Pretrained models/egogesture_resnetl_10_RGB_8.pth' \
 	--resume_path_clf 'trained_models/Pretrained models/egogesture_resnext_101_RGB_32.pth'  \
-  --video $1 \
 	--sample_duration 8 \
 	--sample_duration_det 8 \
 	--sample_duration_clf 32 \

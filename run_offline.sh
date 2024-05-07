@@ -1,23 +1,35 @@
 #!/bin/bash
-python3 offline_test.py \
-  --root_path "$PWD" \
-  --annotation_path annotation_EgoGesture/egogestureall_but_None.json \
-  --result_path results \
-  --pretrain_path trained_models/Pretrained\ models/egogesture_resnetl_10_RGB_8.pth \
-  --dataset egogestur \
-  --sample_duration 3 \
-  --learning_rate 0.0 \
-  --model resnetl \
-  --pretrain_modality Dept \
-  --model_depth 10 \
-  --batch_size 1 \
-  --n_classes 8 \
-  --n_finetune_classes 8 \
-  --modality Dept \
-  --n_threads 1 \
-  --checkpoint 1 \
-  --train_crop rando \
-  --n_val_samples 1 \
-  --test_subset test \
-  --n_epochs 10 \
+
+python offline_test_video.py \
+	--root_path "$PWD" \
+	--resume_path_det 'trained_models/Pretrained models/egogesture_resnetl_10_RGB_8.pth' \
+	--resume_path_clf 'trained_models/Pretrained models/egogesture_resnext_101_RGB_32.pth' \
+	--sample_duration 8 \
+	--sample_duration_det 8 \
+	--sample_duration_clf 32 \
+	--model_det resnetl \
+	--model_clf resnext \
+	--model_depth_det 10 \
+	--width_mult_det 0.5 \
+	--width_mult_clf 1 \
+	--model_depth_clf 101 \
+	--resnet_shortcut_det A \
+  --resnet_shortcut_clf B \
+	--n_classes_det 2 \
+	--n_finetune_classes_det 2 \
+	--n_classes_clf 83 \
+	--n_finetune_classes_clf 83 \
+	--n_threads 16 \
+	--pretrain_modality RGB \
+	--modality_det RGB \
+	--modality_clf RGB \
+	--n_val_samples 1 \
+	--det_strategy median \
+	--det_queue_size 4 \
+	--det_counter 2 \
+	--clf_strategy median \
+	--clf_queue_size 32 \
+	--clf_threshold_pre 1.0 \
+	--clf_threshold_final 0.15 \
+	--stride_len 1\
   --no_cuda

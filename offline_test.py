@@ -102,7 +102,7 @@ spatial_transform = Compose([
     CenterCrop(112),
     ToTensor(opt.norm_value), norm_method
     ])
-temporal_transform = TemporalCenterCrop(opt.sample_duration)
+temporal_transform = TemporalCenterCrop(opt.sample_size, opt.sample_duration)
 #temporal_transform = TemporalBeginCrop(opt.sample_duration)
 #temporal_transform = TemporalEndCrop(opt.sample_duration)
 target_transform = ClassLabel()

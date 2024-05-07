@@ -172,34 +172,33 @@ def generate_model(opt):
         return model, parameters
     else:
         if opt.pretrain_path:
-            print('loading pretrained model {}'.format(opt.pretrain_path))
-            if opt.no_cuda:
-                pretrain = torch.load(opt.pretrain_path, map_location='cpu')
-            else:
-                pretrain = torch.load(opt.pretrain_path)
+            print('loading pretrained model {} w/o cuda'.format(opt.pretrain_path))
+            pretrain = torch.load(opt.pretrain_path, map_location='cpu')
 
             pretrained_dict = pretrain['state_dict']
+            model = modify_kernels(opt, model, opt.pretrain_modality)
+
             model_dict = {k.replace('module.', ''): v for k, v in pretrained_dict.items()}
             model.load_state_dict(model_dict)
 
             
 
             if opt.model in  ['mobilenet', 'mobilenetv2', 'shufflenet', 'shufflenetv2']:
-                model.module.classifier = nn.Sequential(
+                model.classifier = nn.Sequential(
                                 nn.Dropout(0.9),
-                                nn.Linear(model.module.classifier[1].in_features, opt.n_finetune_classes)
+                                nn.Linear(model.classifier[1].in_features, opt.n_finetune_classes)
                                 )
             elif opt.model == 'squeezenet':
-                model.module.classifier = nn.Sequential(
+                model.classifier = nn.Sequential(
                                 nn.Dropout(p=0.5),
-                                nn.Conv3d(model.module.classifier[1].in_channels, opt.n_finetune_classes, kernel_size=1),
+                                nn.Conv3d(model.classifier[1].in_channels, opt.n_finetune_classes, kernel_size=1),
                                 nn.ReLU(inplace=True),
                                 nn.AvgPool3d((1,4,4), stride=1))
             else:
-                model.module.fc = nn.Linear(model.module.fc.in_features, opt.n_finetune_classes)
+                model.fc = nn.Linear(model.fc.in_features, opt.n_finetune_classes)
 
             model = modify_kernels(opt, model, opt.modality)
-            parameters = get_fine_tuning_parameters(model, opt.ft_begin_index)
+            parameters = get_fine_tuning_parameters(model, "last_layer")
             return model, parameters
         else:
             model = modify_kernels(opt, model, opt.modality)

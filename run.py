@@ -10,17 +10,19 @@ from torch.nn import functional as F
 
 from mean import get_mean, get_std
 from model import generate_model
-from opts import parse_opts_offline as parse_opts
+from opts import parse_opts_offline as opt
 from spatial_transforms import *
 from utils import Queue
+
+from opts_run import args as opt
+
 
 def weighting_func(x):
     return (1 / (1 + np.exp(-0.2 * (x - 9))))
 
 
-opt = parse_opts()
-
 regex = re.compile(r'(^module\.)')
+
 
 def load_models(opt):
     opt.resume_path = opt.resume_path_det
@@ -164,20 +166,19 @@ results = []
 prev_best1 = opt.n_classes_clf
 spatial_transform.randomize_parameters()
 
-
 while cap.isOpened():
     t1 = time.time()
     ret, frame = cap.read()
     if num_frame == 0:
-        cur_frame = cv2.resize(frame,(320,240))
-        cur_frame = Image.fromarray(cv2.cvtColor(cur_frame,cv2.COLOR_BGR2RGB))
+        cur_frame = cv2.resize(frame, (320, 240))
+        cur_frame = Image.fromarray(cv2.cvtColor(cur_frame, cv2.COLOR_BGR2RGB))
         cur_frame = cur_frame.convert('RGB')
         for i in range(opt.sample_duration):
             clip.append(cur_frame)
         clip = [spatial_transform(img) for img in clip]
     clip.pop(0)
-    _frame = cv2.resize(frame,(320,240))
-    _frame = Image.fromarray(cv2.cvtColor(_frame,cv2.COLOR_BGR2RGB))
+    _frame = cv2.resize(frame, (320, 240))
+    _frame = Image.fromarray(cv2.cvtColor(_frame, cv2.COLOR_BGR2RGB))
     _frame = _frame.convert('RGB')
     _frame = spatial_transform(_frame)
     clip.append(_frame)
@@ -187,9 +188,8 @@ while cap.isOpened():
     except Exception as e:
         pdb.set_trace()
         raise e
-    inputs = torch.cat([test_data],0).view(1,3,opt.sample_duration,112,112)
+    inputs = torch.cat([test_data], 0).view(1, 3, opt.sample_duration, 112, 112)
     num_frame += 1
-
 
     ground_truth_array = np.zeros(opt.n_classes_clf + 1, )
     with torch.no_grad():
@@ -212,11 +212,11 @@ while cap.isOpened():
         prediction_det = np.argmax(det_selected_queue)
 
         prob_det = det_selected_queue[prediction_det]
-        
+
         #### State of the detector is checked here as detector act as a switch for the classifier
         if prediction_det == 1:
             inputs_clf = inputs[:, :, :, :, :]
-            inputs_clf = torch.Tensor(inputs_clf.numpy()[:,:,::1,:,:])
+            inputs_clf = torch.Tensor(inputs_clf.numpy()[:, :, ::1, :, :])
             outputs_clf = classifier(inputs_clf)
             outputs_clf = F.softmax(outputs_clf, dim=1)
             outputs_clf = outputs_clf.cpu().numpy()[0].reshape(-1, )
@@ -238,7 +238,7 @@ while cap.isOpened():
             # Push the probabilities to queue
             myqueue_clf.enqueue(outputs_clf.tolist())
             passive_count += 1
-    
+
     if passive_count >= opt.det_counter:
         active = False
     else:
@@ -247,8 +247,9 @@ while cap.isOpened():
     # one of the following line need to be commented !!!!
     if active:
         active_index += 1
-        cum_sum = ((cum_sum * (active_index - 1)) + (weighting_func(active_index) * clf_selected_queue)) / active_index  # Weighted Aproach
-        #cum_sum = ((cum_sum * (active_index-1)) + (1.0 * clf_selected_queue))/active_index #Not Weighting Aproach
+        cum_sum = ((cum_sum * (active_index - 1)) + (
+                weighting_func(active_index) * clf_selected_queue)) / active_index  # Weighted Aproach
+        # cum_sum = ((cum_sum * (active_index-1)) + (1.0 * clf_selected_queue))/active_index #Not Weighting Aproach
         best2, best1 = tuple(cum_sum.argsort()[-2:][::1])
         if float(cum_sum[best1] - cum_sum[best2]) > opt.clf_threshold_pre:
             finished_prediction = True
@@ -262,7 +263,7 @@ while cap.isOpened():
         finished_prediction = False
 
     if finished_prediction == True:
-        #print(finished_prediction,pre_predict)
+        # print(finished_prediction,pre_predict)
         best2, best1 = tuple(cum_sum.argsort()[-2:][::1])
         if cum_sum[best1] > opt.clf_threshold_final:
             if pre_predict == True:
@@ -271,7 +272,7 @@ while cap.isOpened():
                         results.append(((i * opt.stride_len) + opt.sample_duration_clf, best1))
                         print('Early Detected - class : {} with prob : {} at frame {}'.format(best1, cum_sum[best1],
                                                                                               (
-                                                                                                          i * opt.stride_len) + opt.sample_duration_clf))
+                                                                                                      i * opt.stride_len) + opt.sample_duration_clf))
             else:
                 if cum_sum[best1] > opt.clf_threshold_final:
                     if best1 == prev_best1:
@@ -279,25 +280,25 @@ while cap.isOpened():
                             results.append(((i * opt.stride_len) + opt.sample_duration_clf, best1))
                             print('Late Detected - class : {} with prob : {} at frame {}'.format(best1,
                                                                                                  cum_sum[best1], (
-                                                                                                             i * opt.stride_len) + opt.sample_duration_clf))
+                                                                                                         i * opt.stride_len) + opt.sample_duration_clf))
                     else:
                         results.append(((i * opt.stride_len) + opt.sample_duration_clf, best1))
 
                         print('Late Detected - class : {} with prob : {} at frame {}'.format(best1, cum_sum[best1],
                                                                                              (
-                                                                                                         i * opt.stride_len) + opt.sample_duration_clf))
+                                                                                                     i * opt.stride_len) + opt.sample_duration_clf))
 
             finished_prediction = False
             prev_best1 = best1
 
         cum_sum = np.zeros(opt.n_classes_clf, )
-    
+
     if active == False and prev_active == True:
         pre_predict = False
 
     prev_active = active
     elapsedTime = time.time() - t1
-    fps = "(Playback) {:.1f} FPS".format(1/elapsedTime)
+    fps = "(Playback) {:.1f} FPS".format(1 / elapsedTime)
 
     if len(results) != 0:
         predicted = np.array(results)[:, 1]
@@ -310,7 +311,7 @@ while cap.isOpened():
     cv2.putText(frame, fps, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (38, 0, 255), 1, cv2.LINE_AA)
     cv2.imshow("Result", frame)
 
-    if cv2.waitKey(1)&0xFF == ord('q'):
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-cv2.destroyAllWindows()
 
+cv2.destroyAllWindows()

@@ -1,11 +1,12 @@
 import argparse
+import os
 
 # Given dictionary-like structure
 args_dict = {
-    'root_path': '/Users/steven/Developer/Eyelids/realtime',
-    'annotation_path': '/Users/steven/Developer/Eyelids/realtime/kinetics.json',
+    'root_path': './realtime',
+    'annotation_path': 'kinetics.json',
     'store_name': 'model',
-    'result_path': '/Users/steven/Developer/Eyelids/realtime/results',
+    'result_path': 'results',
     'modality': 'RGB',
     'modality_det': 'RGB',
     'modality_clf': 'RGB',
@@ -30,7 +31,7 @@ args_dict = {
     'n_val_samples': 1,
     'resume_path_det': 'trained_models/Pretrained models/egogesture_resnetl_10_RGB_8.pth',
     'resume_path_clf': 'trained_models/Pretrained models/egogesture_resnext_101_RGB_32.pth',
-    'resume_path': '/Users/steven/Developer/Eyelids/realtime/trained_models/Pretrained models/egogesture_resnext_101_RGB_32.pth',
+    'resume_path': 'trained_models/Pretrained models/egogesture_resnext_101_RGB_32.pth',
     'pretrain_path_det': '',
     'pretrain_path_clf': '',
     'pretrain_path': '',
@@ -88,3 +89,19 @@ args = argparse.Namespace()
 # Populate the Namespace object with the given key-value pairs
 for key, value in args_dict.items():
     setattr(args, key, value)
+
+if args.root_path != '':
+    args.annotation_path = os.path.join(args.root_path, args.annotation_path)
+    args.result_path = os.path.join(args.root_path, args.result_path)
+    if args.resume_path:
+        args.resume_path = os.path.join(args.root_path, args.resume_path)
+    if args.pretrain_path:
+        args.pretrain_path = os.path.join(args.root_path, args.pretrain_path)
+    if args.resume_path_det:
+        args.resume_path_det = os.path.join(args.root_path, args.resume_path_det)
+    if args.pretrain_path_det:
+        args.pretrain_path_det = os.path.join(args.root_path, args.pretrain_path_det)
+    if args.resume_path_clf:
+        args.resume_path_clf = os.path.join(args.root_path, args.resume_path_clf)
+    if args.pretrain_path_clf:
+        args.pretrain_path_clf = os.path.join(args.root_path, args.pretrain_path_clf)

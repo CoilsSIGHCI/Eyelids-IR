@@ -4,7 +4,6 @@ import os
 # Given dictionary-like structure
 args_dict = {
     'root_path': './realtime',
-    'annotation_path': 'kinetics.json',
     'store_name': 'model',
     'result_path': 'results',
     'modality': 'RGB',
@@ -91,7 +90,6 @@ for key, value in args_dict.items():
     setattr(args, key, value)
 
 if args.root_path != '':
-    args.annotation_path = os.path.join(args.root_path, args.annotation_path)
     args.result_path = os.path.join(args.root_path, args.result_path)
     if args.resume_path:
         args.resume_path = os.path.join(args.root_path, args.resume_path)

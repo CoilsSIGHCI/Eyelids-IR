@@ -1,13 +1,15 @@
 import json
+import logging
 import os
 import pdb
 import re
 import time
-
+from picamera2 import Picamera2
 import numpy as np
 from torch.autograd import Variable
 from torch.nn import functional as F
 
+from spatial import get_gesture_direction
 from .mean import get_mean, get_std
 from .model import generate_model
 from .opts import parse_opts_offline as opt
@@ -35,7 +37,6 @@ def load_models(opt):
     opt.resnet_shortcut = opt.resnet_shortcut_det
     opt.n_classes = opt.n_classes_det
     opt.n_finetune_classes = opt.n_finetune_classes_det
-
 
     opt.scales = [opt.initial_scale]
     for i in range(1, opt.n_scales):
@@ -132,7 +133,6 @@ spatial_transform = Compose([
 
 
 def run(callback, capture_device: int = 0, playback: bool = False):
-    cap = cv2.VideoCapture(capture_device)
     num_frame = 0
 
     opt.sample_duration = max(opt.sample_duration_clf, opt.sample_duration_det)
@@ -155,9 +155,23 @@ def run(callback, capture_device: int = 0, playback: bool = False):
     prev_best1 = opt.n_classes_clf
     spatial_transform.randomize_parameters()
 
-    while cap.isOpened():
+    if playback:
+        cap = cv2.VideoCapture('/home/uw/test_ego.mp4')
+    else:
+        cap = Picamera2()
+        cap.configure(cap.create_preview_configuration())
+        cap.start()
+
+    while True:
         t1 = time.time()
-        ret, frame = cap.read()
+        if playback:
+            _, frame = cap.read()
+        else:
+            frame = cap.capture_array()
+        # cv2.imshow("Result", frame)
+        if frame is None:
+            logging.warning(f"Frame is {frame}")
+            continue
         if num_frame == 0:
             cur_frame = cv2.resize(frame, (320, 240))
             cur_frame = Image.fromarray(cv2.cvtColor(cur_frame, cv2.COLOR_BGR2RGB))
@@ -171,7 +185,7 @@ def run(callback, capture_device: int = 0, playback: bool = False):
         _frame = _frame.convert('RGB')
         _frame = spatial_transform(_frame)
         clip.append(_frame)
-        im_dim = clip[0].size[-2:]
+        im_dim = clip[0].size()[-2:]
         try:
             test_data = torch.cat(clip, 0).view((opt.sample_duration, -1) + im_dim).permute(1, 0, 2, 3)
         except Exception as e:
@@ -180,7 +194,6 @@ def run(callback, capture_device: int = 0, playback: bool = False):
         inputs = torch.cat([test_data], 0).view(1, 3, opt.sample_duration, 112, 112)
         num_frame += 1
 
-        ground_truth_array = np.zeros(opt.n_classes_clf + 1, )
         with torch.no_grad():
             inputs = Variable(inputs)
             inputs_det = inputs[:, :, -opt.sample_duration_det:, :, :]
@@ -204,6 +217,7 @@ def run(callback, capture_device: int = 0, playback: bool = False):
 
             #### State of the detector is checked here as detector act as a switch for the classifier
             if prediction_det == 1:
+                print('Classified as gesture')
                 inputs_clf = inputs[:, :, :, :, :]
                 inputs_clf = torch.Tensor(inputs_clf.numpy()[:, :, ::1, :, :])
                 outputs_clf = classifier(inputs_clf)
@@ -243,14 +257,8 @@ def run(callback, capture_device: int = 0, playback: bool = False):
             if float(cum_sum[best1] - cum_sum[best2]) > opt.clf_threshold_pre:
                 finished_prediction = True
                 pre_predict = True
-
-            # MARK: callback with coordinates and labels as dictionary
-            callback({
-                "x": 0,
-                "y": 0,
-                "gesture": best1,
-                "confidence": cum_sum[best1]
-            })
+            print("Calling back with active gesture")
+            callback({"gesture": best1, "direction": get_gesture_direction(best1), "confidence": cum_sum[best1].copy()})
 
         else:
             active_index = 0
@@ -302,19 +310,14 @@ def run(callback, capture_device: int = 0, playback: bool = False):
             prev_best1 = -1
         else:
             predicted = []
-            # MARK: clear with callback
-            callback(None)
 
         print('predicted classes: \t', predicted)
 
-        if playback:
-            cv2.putText(frame, fps, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (38, 0, 255), 1, cv2.LINE_AA)
-            cv2.imshow("Result", frame)
+        cv2.putText(frame, fps, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (38, 0, 255), 1, cv2.LINE_AA)
+        cv2.imwrite('/tmp/output.png', frame)
+        # cv2.imshow("Result", frame)
 
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
-    cap.release()
+    cap.close()
     if playback:
         cv2.destroyAllWindows()
 
